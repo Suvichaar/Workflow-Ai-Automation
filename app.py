@@ -75,6 +75,7 @@ with tab1:
             for container in containers:
                 quote_div = container.find("div", class_="quote-a")
                 quote_text = quote_div.get_text(strip=True) if quote_div else container.find("a", class_="quote-a").get_text(strip=True)
+
                 quote_link = ""
                 if quote_div and quote_div.find("a"):
                     quote_link = quote_div.find("a").get("href", "")
@@ -123,8 +124,10 @@ with tab1:
 
                 df = pd.DataFrame(all_quotes, columns=["Serial No", "Quote", "Link", "Author"])
                 distinct_authors = df["Author"].drop_duplicates().sort_values().tolist()
+                authors_comma_str = ", ".join(distinct_authors)
+
                 st.markdown("### 👤 Distinct Authors Found")
-                st.write(distinct_authors)
+                st.text(authors_comma_str)
             else:
                 st.warning("⚠️ No quotes scraped.")
 
