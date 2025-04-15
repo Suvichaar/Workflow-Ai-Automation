@@ -182,7 +182,7 @@ with tab2:
                 keyword_folder = os.path.basename(foldername)
                 s3_key = f"{s3_prefix}{keyword_folder}/{filename}"
                 try:
-                    s3.upload_file(filepath, bucket_name, s3_key, ExtraArgs={"ACL": "public-read"})
+                    s3.upload_file(filepath, bucket_name, s3_key)
                     cdn_url = f"{cdn_base_url}{s3_key}"
                     upload_info.append([keyword_folder, filename, cdn_url])
                 except Exception as e:
