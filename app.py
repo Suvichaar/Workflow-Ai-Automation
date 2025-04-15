@@ -20,8 +20,7 @@ import base64
 import shutil
 
 # ================== 📘 Tab Setup ==================
-tab1, tab2 = st.tabs(["📄 Quote Scraper", "🖼️ Bulk Image Downloader"])
-
+tab1, tab2 , tab3 = st.tabs(["📄 Quote Scraper", " 🖼️ Bulk Image Downloader ", "🧰 CDN Image Transformer"])
 # ================== 📄 QuoteFancy Scraper in tab1 ==================
 with tab1:
     st.title("📝 QuoteFancy Scraper")
