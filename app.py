@@ -133,33 +133,72 @@ with tab1:
 
 # ================== 🖼️ Bulk Image Downloader in tab2 ==================
 with tab2:
-    st.title("🖼️ Bulk Image Downloader")
+    
+    st.title("🖼️ Bulk Image Downloader + S3 CDN Uploader")
+
+    import boto3
+    import io
+    import zipfile
+    import os
+    import shutil
+    import csv
+    from simple_image_download import simple_image_download as simp
+
+    # AWS Config
+    aws_access_key = st.secrets["aws_access_key"]
+    aws_secret_key = st.secrets["aws_secret_key"]
+    region_name = "ap-south-1"
+    bucket_name = "suvichaarapp"
+    s3_prefix = "media/"
+    cdn_base_url = "https://media.suvichaar.org/"
+
+    # Boto3 client setup
+    s3 = boto3.client("s3",
+                      aws_access_key_id=aws_access_key,
+                      aws_secret_access_key=aws_secret_key,
+                      region_name=region_name)
 
     keywords_input = st.text_input("Enter comma-separated keywords", "cat,dog,car")
     count = st.number_input("Number of images per keyword", min_value=1, value=5)
 
-    if st.button("Download Images", key="img_button"):
+    if st.button("Download & Upload Images", key="img_button"):
         keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
         response = simp.simple_image_download
 
+        # Clean previous folder
         if os.path.exists("simple_images"):
             shutil.rmtree("simple_images")
 
+        # Download Images
         for keyword in keywords:
             st.write(f"🔍 Downloading `{count}` images for: **{keyword}**")
             response().download(keyword, count)
 
-        zip_filename = "simple_images.zip"
-        if os.path.exists(zip_filename):
-            os.remove(zip_filename)
+        # Upload to S3 + collect info
+        upload_info = []
+        for foldername, _, filenames in os.walk("simple_images"):
+            for filename in filenames:
+                filepath = os.path.join(foldername, filename)
+                keyword_folder = os.path.basename(foldername)
+                s3_key = f"{s3_prefix}{keyword_folder}/{filename}"
+                try:
+                    s3.upload_file(filepath, bucket_name, s3_key, ExtraArgs={"ACL": "public-read"})
+                    cdn_url = f"{cdn_base_url}{s3_key}"
+                    upload_info.append([keyword_folder, filename, cdn_url])
+                except Exception as e:
+                    st.error(f"❌ Upload failed for {filename}: {str(e)}")
 
-        with zipfile.ZipFile(zip_filename, 'w') as zipf:
-            for foldername, subfolders, filenames in os.walk("simple_images"):
-                for filename in filenames:
-                    filepath = os.path.join(foldername, filename)
-                    zipf.write(filepath)
+        # Generate CSV in memory
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["Keyword", "Filename", "CDN_URL"])
+        writer.writerows(upload_info)
 
-        with open(zip_filename, "rb") as f:
-            st.download_button("📥 Download Zipped Images", f, file_name="simple_images.zip")
+        st.download_button(
+            "📥 Download Image CDN CSV",
+            data=csv_buffer.getvalue(),
+            file_name="cdn_image_links.csv",
+            mime="text/csv"
+        )
 
-        st.success("✅ Image download ready!")
+        st.success("✅ All images uploaded and links generated!")
