@@ -3,3 +3,4 @@ simple_image_download
 requests
 beautifulsoup4 
 pandas
+boto3
