@@ -196,7 +196,7 @@ with tab2:
         writer.writerows(upload_info)
 
         st.download_button(
-            "📥 Download Image CDN CSV",
+            "📥 Download Images Link",
             data=csv_buffer.getvalue(),
             file_name=f"{filename}.csv",
             mime="text/csv"
