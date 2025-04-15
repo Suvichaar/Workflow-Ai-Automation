@@ -158,8 +158,9 @@ with tab2:
                       aws_secret_access_key=aws_secret_key,
                       region_name=region_name)
 
-    keywords_input = st.text_input("Enter comma-separated keywords", "cat,dog,car")
+    keywords_input = st.text_input("Enter comma-separated keywords ", "cat,dog,car")
     count = st.number_input("Number of images per keyword", min_value=1, value=5)
+    filename = st.text_input("Enter the filenamem :","Image") 
 
     if st.button("Download & Upload Images", key="img_button"):
         keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
@@ -197,7 +198,7 @@ with tab2:
         st.download_button(
             "📥 Download Image CDN CSV",
             data=csv_buffer.getvalue(),
-            file_name="cdn_image_links.csv",
+            file_name=f"{filename}.csv",
             mime="text/csv"
         )
 
