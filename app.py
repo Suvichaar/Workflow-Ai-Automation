@@ -160,7 +160,7 @@ with tab2:
 
     keywords_input = st.text_input("Enter comma-separated keywords ", "cat,dog,car")
     count = st.number_input("Number of images per keyword", min_value=1, value=5)
-    filename = st.text_input("Enter the filenamem :","Image") 
+    filename = st.text_input("Enter the filename :","Image") 
 
     if st.button("Download & Upload Images", key="img_button"):
         keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
