@@ -15,6 +15,8 @@ import io
 from simple_image_download import simple_image_download as simp
 import zipfile
 import os
+import json
+import base64
 import shutil
 
 # ================== 📘 Tab Setup ==================
@@ -203,3 +205,68 @@ with tab2:
         )
 
         st.success("✅ All images uploaded and links generated!")
+
+with tab3:
+    
+    st.title("🧰 CDN Image Transformer from CSV")
+
+    uploaded_file = st.file_uploader("📤 Upload CSV file with `CDN_URL` column", type="csv")
+
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        if "CDN_URL" not in df.columns:
+            st.error("❌ The CSV must contain a column named `CDN_URL`.")
+        else:
+            st.success("✅ CSV Uploaded Successfully!")
+
+            transformed_urls = []
+            error_rows = []
+
+            template = """
+            {
+              "bucket": "suvichaarapp",
+              "key": "keyValue",
+              "edits": {
+                "resize": {
+                  "width": 720,
+                  "height": 1280,
+                  "fit": "cover"
+                }
+              }
+            }
+            """
+
+            for i, row in df.iterrows():
+                media_url = row["CDN_URL"]
+
+                try:
+                    # Extract key from CDN URL
+                    if not isinstance(media_url, str) or not media_url.startswith("https://media.suvichaar.org/"):
+                        raise ValueError("Invalid CDN URL")
+
+                    key_value = media_url.replace("https://media.suvichaar.org/", "")
+                    json_str = template.replace("keyValue", key_value)
+
+                    # Parse & encode the JSON
+                    json_obj = json.loads(json_str)
+                    encoded = base64.urlsafe_b64encode(json.dumps(json_obj).encode()).decode()
+
+                    final_url = f"https://media.suvichaar.org/{encoded}"
+                    transformed_urls.append(final_url)
+
+                except Exception as e:
+                    transformed_urls.append("ERROR")
+                    error_rows.append((i, str(e)))
+
+            # Add new column and show CSV preview
+            df["Transformed_CDN_URL"] = transformed_urls
+
+            st.markdown("### 📄 Preview of Transformed Data")
+            st.dataframe(df.head())
+
+            # Download CSV
+            csv_output = df.to_csv(index=False).encode('utf-8')
+            st.download_button("📥 Download Transformed CSV", data=csv_output, file_name="transformed_cdn_links.csv", mime="text/csv")
+
+            if error_rows:
+                st.warning(f"⚠️ Some rows had errors: {len(error_rows)}")
