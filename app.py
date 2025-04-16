@@ -1,6 +1,3 @@
-# ================== 📦 Install First ==================
-# pip install streamlit simple_image_download requests beautifulsoup4 pandas
-
 # ================== 📋 Import ==================
 import streamlit as st
 import requests
