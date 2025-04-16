@@ -1,3 +1,6 @@
+# ================== 📦 Install First ==================
+# pip install streamlit simple_image_download requests beautifulsoup4 pandas
+
 # ================== 📋 Import ==================
 import streamlit as st
 import requests
@@ -131,9 +134,8 @@ with tab1:
 
 # ================== 🖼️ Bulk Image Downloader in tab2 ==================
 with tab2:
-    
-    st.title("🖼️ Bulk Image Downloader + S3 CDN Uploader")
 
+    import streamlit as st
     import boto3
     import io
     import zipfile
@@ -141,67 +143,81 @@ with tab2:
     import shutil
     import csv
     from simple_image_download import simple_image_download as simp
-
-    # AWS Config
+    
+    # Title
+    st.title("🖼️ Bulk Image Downloader + S3 CDN Uploader")
+    
+    # ================== 🔐 AWS Config ==================
     aws_access_key = st.secrets["aws_access_key"]
     aws_secret_key = st.secrets["aws_secret_key"]
     region_name = "ap-south-1"
     bucket_name = "suvichaarapp"
     s3_prefix = "media/"
     cdn_base_url = "https://media.suvichaar.org/"
-
-    # Boto3 client setup
-    s3 = boto3.client("s3",
-                      aws_access_key_id=aws_access_key,
-                      aws_secret_access_key=aws_secret_key,
-                      region_name=region_name)
-
-    keywords_input = st.text_input("Enter comma-separated keywords ", "cat,dog,car")
+    
+    # ================== 📦 Boto3 Setup ==================
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=aws_access_key,
+        aws_secret_access_key=aws_secret_key,
+        region_name=region_name
+    )
+    
+    # ================== 🎯 User Input ==================
+    keywords_input = st.text_input("Enter comma-separated keywords", "cat,dog,car")
     count = st.number_input("Number of images per keyword", min_value=1, value=5)
-    filename = st.text_input("Enter the filename :","Image") 
-
+    filename_input = st.text_input("Enter filename for CSV output", "image_links")
+    
+    # ================== 🚀 Main Logic ==================
     if st.button("Download & Upload Images", key="img_button"):
         keywords = [k.strip() for k in keywords_input.split(",") if k.strip()]
         response = simp.simple_image_download
-
-        # Clean previous folder
+    
+        # Clean up old folder
         if os.path.exists("simple_images"):
             shutil.rmtree("simple_images")
-
-        # Download Images
+    
+        # ================== ⬇️ Download Images ==================
         for keyword in keywords:
             st.write(f"🔍 Downloading `{count}` images for: **{keyword}**")
             response().download(keyword, count)
-
-        # Upload to S3 + collect info
+    
+        # ================== ☁️ Upload to S3 & Generate Links ==================
         upload_info = []
         for foldername, _, filenames in os.walk("simple_images"):
             for filename in filenames:
                 filepath = os.path.join(foldername, filename)
                 keyword_folder = os.path.basename(foldername)
-                s3_key = f"{s3_prefix}{keyword_folder}/{filename}"
+    
+                # Replace spaces with underscores
+                folder_safe = keyword_folder.replace(" ", "_")
+                file_safe = filename.replace(" ", "_")
+                s3_key = f"{s3_prefix}{folder_safe}/{file_safe}"
+    
                 try:
                     s3.upload_file(filepath, bucket_name, s3_key)
                     cdn_url = f"{cdn_base_url}{s3_key}"
-                    upload_info.append([keyword_folder, filename, cdn_url])
+                    upload_info.append([folder_safe, file_safe, cdn_url])
                 except Exception as e:
                     st.error(f"❌ Upload failed for {filename}: {str(e)}")
-
-        # Generate CSV in memory
+    
+        # ================== 🧾 Create CSV ==================
+        csv_filename = f"{filename_input.strip()}.csv"
         csv_buffer = io.StringIO()
         writer = csv.writer(csv_buffer)
         writer.writerow(["Keyword", "Filename", "CDN_URL"])
         writer.writerows(upload_info)
-
+    
+        # ================== 📥 Download Button ==================
         st.download_button(
-            "📥 Download Images Link",
+            label="📥 Download CDN URLs CSV",
             data=csv_buffer.getvalue(),
-            file_name=f"{filename}.csv",
+            file_name=csv_filename,
             mime="text/csv"
         )
-
-        st.success("✅ All images uploaded and links generated!")
-
+    
+        st.success("✅ All images uploaded to S3 and CDN links saved!")
+    
 with tab3:
     
     st.title("🧰 CDN Image Transformer from CSV")
