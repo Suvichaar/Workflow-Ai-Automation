@@ -155,7 +155,7 @@ with tab2:
     region_name = "ap-south-1"
     bucket_name = "suvichaarapp"
     s3_prefix = "media/"
-    cdn_base_url = "https://media.suvichaar.org/"
+    cdn_base_url = "https://cdn.suvichaar.org/"
 
     # Boto3 client setup
     import boto3
